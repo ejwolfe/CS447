@@ -6,11 +6,15 @@
 #include <unistd.h>
 #include <string.h>
 #define PORT 9080
+#define BUF_SIZE 4096
+#define NOTOK_404   "HTTP/1.0 404 Not Found\nContent-Type:text/html\n\n"
+#define MESS_404    "<html><body><h1>FILE NOT FOUND</h1></body></html>"
 
 using namespace std;
 
 int main(int argc, char const *argv[]){
   char buffer[1024] = {0};
+  char out_buf[BUF_SIZE];
   struct sockaddr_in my_addr, client_addr;
   unsigned int socket_id, child_sock;
   int bindStatus, listenStatus, addrLen = sizeof(struct sockaddr_in);
@@ -42,6 +46,10 @@ int main(int argc, char const *argv[]){
     send(child_sock, message, strlen(message), 0);
     recv(child_sock, buffer, sizeof(buffer)-1, 0);
     cout << buffer << endl;
+    strcpy(out_buf, NOTOK_404);
+    send(child_sock, out_buf, strlen(out_buf), 0);
+    strcpy(out_buf, MESS_404);
+    send(child_sock, out_buf, strlen(out_buf), 0);
     close(child_sock);
   }
 

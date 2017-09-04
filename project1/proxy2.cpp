@@ -89,7 +89,7 @@ void *handle_get(void *in_arg)
    unsigned int   buf_len;              // Buffer length for file reads
    unsigned int   retcode;              // Return code
    ifstream       myFile;
-   vector<char>   v;
+   string         line;
 
                                         // Set clientSocket to in_arg
    clientSocket = *((unsigned int *) in_arg);
@@ -127,17 +127,9 @@ void *handle_get(void *in_arg)
             strcpy(out_buf, OK_TEXT);
 
          send(clientSocket, out_buf, strlen(out_buf), 0);
-         for(char n; myFile >> n;){
-           int len = strlen(out_buf);
-           out_buf[len] = n;
-           out_buf[len+1] = '\0';
+         while(getline(myFile, line)){
+           send(clientSocket, line.c_str(), line.length(), 0);
          }
-         send(clientSocket, out_buf, sizeof(out_buf), 0);
-         /*while (myFile.read(out_buf, BUF_SIZE))
-         {
-            printf("%s\n", file_name);
-            send(clientSocket, out_buf, buf_len, 0);
-         }*/
          close(myFile);
       }
    }

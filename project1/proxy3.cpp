@@ -12,6 +12,7 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <ifstream>
 
 // Defines
 #define PROXYPORT 9080
@@ -83,9 +84,47 @@ int main(int argc, char const *argv[]) {
 void *clientToServer(void *in_args){
   unsigned int  clientSocket, serverSocket, fh, bufferLength, returnCode;
   char          inBuffer[BUFFERSIZE], outBuffer[BUFFERSIZE], *fileName;
+  string        line;
+  bool          connectionFlag = 1;
 
   clientSocket = *((unsigned int *) in_args[0]);
   serverSocket = *((unsigned int *) in_args[1]);
 
-  returnCode = recv(clientSocket, inBuffer, BUFFERSIZE, 0);
+  while(connectionFlag == 1){
+    returnCode = recv(clientSocket, inBuffer, BUFFERSIZE, 0);
+
+    if (returnCode != 1){
+      if (serverSocket == 0){
+        strcpy(outBuffer, NOTOK_404);
+        send(clientSocket, outBuffer, strlen(outBuffer), 0);
+        strcpy(outBuffer, MESS_404);
+        send(clientSocket, outBuffer, strlen(outBuffer), 0);
+        connectionFlag = 0;
+      }
+      else{
+        strtok(inBuffer, " ");
+        file_name = strtok(NULL, " ");
+        fileName = fileName + 1;
+        send(serverSocket, fileName, strlen(fileName), 0);
+      }
+    }
+  }
+  pthread_exit(0);
+}
+
+void *serverToClient(void *in_args){
+  unsigned int  clientSocket, serverSocket, fh, bufferLength, returnCode;
+  char          inBuffer[BUFFERSIZE], outBuffer[BUFFERSIZE], *fileName;
+  string        line;
+  bool          connectionFlag = 1;
+
+  clientSocket = *((unsigned int *) in_args[0]);
+  serverSocket = *((unsigned int *) in_args[1]);
+  while(connectionFlag == 1){
+    returnCode = recv(serverSocket, inBuffer, BUFFERSIZE, 0);
+
+    if (returnCode != 1){
+
+    }
+  }
 }

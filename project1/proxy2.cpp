@@ -1,5 +1,6 @@
 //Include files
 #include <iostream>
+#include <fstream>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <sys/ioctl.h>
@@ -12,6 +13,7 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <vector>
 
 // Defines
 #define PORT 9080
@@ -86,6 +88,8 @@ void *handle_get(void *in_arg)
    unsigned int   fh;                   // File handle
    unsigned int   buf_len;              // Buffer length for file reads
    unsigned int   retcode;              // Return code
+   ifstream       myFile;
+   vector<char>   v;
 
                                         // Set clientSocket to in_arg
    clientSocket = *((unsigned int *) in_arg);
@@ -102,10 +106,11 @@ void *handle_get(void *in_arg)
 
       // Open the requested file
       //  - Start at 2nd char to get rid of leading "\"
-      fh = open(&file_name[1], 0, S_IREAD | S_IWRITE);
+      file_name = file_name + 1;
+      myFile.open(file_name);
 
       // Generate and send the response (404 if could not open the file)
-      if (fh == -1)
+      if (!myFile.is_open())
       {
          printf("File %s not found - sending an HTTP 404 \n", &file_name[1]);
          strcpy(out_buf, NOTOK_404);
@@ -113,22 +118,27 @@ void *handle_get(void *in_arg)
          strcpy(out_buf, MESS_404);
          send(clientSocket, out_buf, strlen(out_buf), 0);
       }
-
       else
       {
-         printf("File %s is being sent \n", &file_name[1]);
+         printf("File %s is being sent \n", file_name);
          if (strstr(file_name, ".gif") != NULL)
             strcpy(out_buf, OK_IMAGE);
          else
             strcpy(out_buf, OK_TEXT);
 
          send(clientSocket, out_buf, strlen(out_buf), 0);
-         while (!fh)
-         {
-            buf_len = read(fh, out_buf, BUF_SIZE);
-            send(clientSocket, out_buf, buf_len, 0);
+         for(char n; myFile >> n;){
+           int len = strlen(out_buf);
+           out_buf[len] = n;
+           out_buf[len+1] = '\0';
          }
-         close(fh);
+         send(clientSocket, out_buf, sizeof(out_buf), 0);
+         /*while (myFile.read(out_buf, BUF_SIZE))
+         {
+            printf("%s\n", file_name);
+            send(clientSocket, out_buf, buf_len, 0);
+         }*/
+         close(myFile);
       }
    }
 

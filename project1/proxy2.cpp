@@ -16,7 +16,7 @@
 #include <vector>
 
 // Defines
-#define PORT 9080
+#define PORT 1080
 #define BUF_SIZE 4096
 // HTTP response messages
 #define OK_IMAGE    "HTTP/1.0 200 OK\nContent-Type:image/gif\n\n"
@@ -41,12 +41,11 @@ int main(int argc, char const *argv[]) {
   proxyAddress.sin_port = htons(PORT);
   proxyAddress.sin_addr.s_addr = htonl(INADDR_ANY);
   bind(proxySocket, (struct sockaddr *)&proxyAddress, sizeof(proxyAddress));
-
   // Main loop to listen, accept, and then spin-off a thread to handle the GET
   while (1)
   {
      // Listen for connections and then accept
-     listen(proxySocket, 100);
+    listen(proxySocket, 100);
      addressLength = sizeof(clientAddress);
      clientSocket = accept(proxySocket, (struct sockaddr *)&clientAddress, (socklen_t*)&addressLength);
      if (clientSocket == 0)
@@ -112,7 +111,7 @@ void *handle_get(void *in_arg)
       // Generate and send the response (404 if could not open the file)
       if (!myFile.is_open())
       {
-         printf("File %s not found - sending an HTTP 404 \n", &file_name[1]);
+         printf("File %s not found - sending an HTTP 404 \n", file_name);
          strcpy(out_buf, NOTOK_404);
          send(clientSocket, out_buf, strlen(out_buf), 0);
          strcpy(out_buf, MESS_404);

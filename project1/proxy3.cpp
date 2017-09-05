@@ -124,7 +124,20 @@ void *serverToClient(void *in_args){
     returnCode = recv(serverSocket, inBuffer, BUFFERSIZE, 0);
 
     if (returnCode != 1){
-
+      if (serverSocket == 0){
+        strcpy(outBuffer, NOTOK_404);
+        send(clientSocket, outBuffer, strlen(outBuffer), 0);
+        strcpy(outBuffer, MESS_404);
+        send(clientSocket, outBuffer, strlen(outBuffer), 0);
+        connectionFlag = 0;
+      }
+      else{
+        strcpy(outBuffer, inBuffer);
+        send(clientSocket, outBuffer, strlen(outBuffer), 0);
+      }
     }
   }
+  close(serverSocket);
+  close(clientSocket);
+  pthread_exit(0);
 }

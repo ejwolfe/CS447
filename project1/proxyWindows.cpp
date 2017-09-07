@@ -24,7 +24,7 @@
 
 #define PROXYPORT 9080
 
-#define BUFFERSIZE 4096
+#define BUFFERSIZE 1024
 
 #define SERVERPORT 1080
 
@@ -117,15 +117,15 @@ int main(int argc, char const *argv[]) {
 
 		// Create the server socket, fill-in address information, and then connect
 
-		serverSocket = socket(AF_INET, SOCK_STREAM, 0);
+		serverSocket = socket(PF_INET, SOCK_STREAM, 0);
 
-		serverAddress.sin_family = AF_INET;
+		serverAddress.sin_family = PF_INET;
 
 		serverAddress.sin_port = htons(SERVERPORT);
 
 		serverAddress.sin_addr.s_addr = inet_addr("127.0.0.1");
 
-		serverSocketConnection = connect(serverSocket, (struct sockaddr *)&serverAddress, sizeof(serverAddress));
+		connect(serverSocket, (struct sockaddr *)&serverAddress, sizeof(serverAddress));
 
 
 
@@ -170,11 +170,17 @@ void clientToServer(void *in_args) {
 	bool          connectionFlag = 1;
 
 
-	while (connectionFlag == 1) {
+	while (1) {
+
+		for (int j = 0; j < BUFFERSIZE; j++)
+		{
+			outBuffer[j] = '\0';
+			inBuffer[j] = '\0';
+		}
 
 		returnCode = recv(clientSocket, inBuffer, BUFFERSIZE, 0);
 
-		printf("The return code is %d and the in buffer says %s", returnCode, inBuffer);
+		//printf("The return code is %d and the in buffer says %s", returnCode, inBuffer);
 
 		if (returnCode != -1) {
 
@@ -193,10 +199,14 @@ void clientToServer(void *in_args) {
 			}
 
 			else {
+				printf("%s", inBuffer);
 				strcpy(outBuffer, inBuffer);
 				send(serverSocket, outBuffer, strlen(outBuffer), 0);
 			}
 
+		}
+		else {
+			break;
 		}
 
 	}
@@ -215,9 +225,17 @@ void serverToClient(void *in_args) {
 
 	bool          connectionFlag = 1;
 
-	while (connectionFlag == 1) {
+	while (1) {
+		/* Clean up the buffers */
+		for (int j = 0; j < BUFFERSIZE; j++)
+		{
+			outBuffer[j] = '\0';
+			inBuffer[j] = '\0';
+		}
 
 		returnCode = recv(serverSocket, inBuffer, BUFFERSIZE, 0);
+
+		printf("%s\n", inBuffer);
 
 		if (returnCode != -1) {
 
@@ -239,10 +257,15 @@ void serverToClient(void *in_args) {
 
 				strcpy(outBuffer, inBuffer);
 
+				//printf("%c", outBuffer);
+
 				send(clientSocket, outBuffer, strlen(outBuffer), 0);
 
 			}
 
+		}
+		else {
+			break;
 		}
 
 	}

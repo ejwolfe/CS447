@@ -117,15 +117,15 @@ int main(int argc, char const *argv[]) {
 
 		// Create the server socket, fill-in address information, and then connect
 
-		serverSocket = socket(PF_INET, SOCK_STREAM, 0);
+		serverSocket = socket(AF_INET, SOCK_STREAM, 0);
 
-		serverAddress.sin_family = PF_INET;
+		serverAddress.sin_family = AF_INET;
 
 		serverAddress.sin_port = htons(SERVERPORT);
 
 		serverAddress.sin_addr.s_addr = inet_addr("127.0.0.1");
 
-		connect(serverSocket, (struct sockaddr *)&serverAddress, sizeof(serverAddress));
+		serverSocketConnection = connect(serverSocket, (struct sockaddr *)&serverAddress, sizeof(serverAddress));
 
 
 
@@ -169,44 +169,29 @@ void clientToServer(void *in_args) {
 
 	bool          connectionFlag = 1;
 
+	returnCode = recv(clientSocket, inBuffer, BUFFERSIZE, 0);
 
-	while (1) {
+	//printf("The return code is %d and the in buffer says %s", returnCode, inBuffer);
 
-		for (int j = 0; j < BUFFERSIZE; j++)
-		{
-			outBuffer[j] = '\0';
-			inBuffer[j] = '\0';
-		}
+	if (returnCode != -1) {
 
-		returnCode = recv(clientSocket, inBuffer, BUFFERSIZE, 0);
+		if (serverSocket == 0) {
 
-		//printf("The return code is %d and the in buffer says %s", returnCode, inBuffer);
+			strcpy(outBuffer, NOTOK_404);
 
-		if (returnCode != -1) {
+			send(clientSocket, outBuffer, strlen(outBuffer), 0);
 
-			if (serverSocket == 0) {
+			strcpy(outBuffer, MESS_404);
 
-				strcpy(outBuffer, NOTOK_404);
+			send(clientSocket, outBuffer, strlen(outBuffer), 0);
 
-				send(clientSocket, outBuffer, strlen(outBuffer), 0);
-
-				strcpy(outBuffer, MESS_404);
-
-				send(clientSocket, outBuffer, strlen(outBuffer), 0);
-
-				connectionFlag = 0;
-
-			}
-
-			else {
-				printf("%s", inBuffer);
-				strcpy(outBuffer, inBuffer);
-				send(serverSocket, outBuffer, strlen(outBuffer), 0);
-			}
+			connectionFlag = 0;
 
 		}
 		else {
-			break;
+			printf("%s", inBuffer);
+			strcpy(outBuffer, inBuffer);
+			send(serverSocket, outBuffer, strlen(outBuffer), 0);
 		}
 
 	}
@@ -235,7 +220,7 @@ void serverToClient(void *in_args) {
 
 		returnCode = recv(serverSocket, inBuffer, BUFFERSIZE, 0);
 
-		printf("%s\n", inBuffer);
+		//printf("%s\n", inBuffer);
 
 		if (returnCode != -1) {
 

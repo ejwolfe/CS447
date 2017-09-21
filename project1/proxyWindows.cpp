@@ -120,25 +120,8 @@ void serverToClient(void *in_args) {
 			outBuffer[j] = '\0';
 			inBuffer[j] = '\0';
 		}
-		returnCode = recv(serverSocket, inBuffer, BUFFERSIZE, 0);
-		//printf("%s\n", inBuffer);
-		if (returnCode != -1) {
-			if (serverSocket == 0) {
-				strcpy(outBuffer, NOTOK_404);
-				send(clientSocket, outBuffer, strlen(outBuffer), 0);
-				strcpy(outBuffer, MESS_404);
-				send(clientSocket, outBuffer, strlen(outBuffer), 0);
-				connectionFlag = 0;
-			}
-			else {
-				strcpy(outBuffer, inBuffer);
-				//printf("%c", outBuffer);
-				send(clientSocket, outBuffer, strlen(outBuffer), 0);
-			}
-		}
-		else {
-			break;
-		}
+		returnCode = recv(serverSocket, in Buffer, BUFFERSIZE, 0);
+		send(clientSocket, inBuffer, strlen(inBuffer), 0);
 	}
 	closesocket(serverSocket);
 	closesocket(clientSocket);

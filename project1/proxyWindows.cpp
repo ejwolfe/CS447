@@ -74,6 +74,8 @@ int main(int argc, char const *argv[]) {
 		serverSocket.push_back(serverSocketTemp);
 
 		int threadArgs[2] = { clientSocketPosition, serverSocketPosition };
+		clientSocketPosition++;
+		serverSocketPosition++;
 		// Setting up arguments for the threads (easier to pass socket information) and then start threads
 		if (_beginthread(clientToServer, 4096, (void *)threadArgs) < 0) {
 			printf("ERROR - Unable to create client to server thread \n");
@@ -83,8 +85,6 @@ int main(int argc, char const *argv[]) {
 			printf("ERROR - Unable to create client to server thread \n");
 			exit(1);
 		}
-		clientSocketPosition++;
-		serverSocketPosition++;
 	}
 	closesocket(proxySocket);
 	WSACleanup();
@@ -103,7 +103,6 @@ void clientToServer(void *in_args) {
 	serverSocketPosition = ((int *) in_args)[1];
 
 	returnCode = recv(clientSocket[clientSocketPosition], inBuffer, strlen(inBuffer), 0);
-	while (1) {
 		//printf("The return code is %d and the in buffer says %s", returnCode, inBuffer);
 		if (returnCode != -1) {
 			if (serverSocket[serverSocketPosition] == 0) {
@@ -116,9 +115,36 @@ void clientToServer(void *in_args) {
 			else {
 				//printf("%s", inBuffer);
 				strcpy(outBuffer, inBuffer);
-				send(serverSocket[serverSocketPosition], outBuffer, strlen(outBuffer), 0);
+				send(serverSocket[serverSocketPosition], outBuffer, returnCode, 0);
 			}
+	}
+	_endthread();
+}
+
+
+void serverToClient(void *in_args) {
+	unsigned int  fh, bufferLength, returnCode;
+	bool          connectionFlag = 1;
+	int	clientSocketPosition, serverSocketPosition;
+	clientSocketPosition = ((int *)in_args)[0];
+	serverSocketPosition = ((int *)in_args)[1];
+
+	while (1) {
+		char inBuffer[BUFFERSIZE];
+		returnCode = recv(serverSocket[serverSocketPosition], inBuffer, BUFFERSIZE, 0);
+		if (returnCode == -1) {
+			printf("Error occured with server connection");
+			break;
+		}
+		else if(returnCode == 0){
+			printf("Disconnected from server");
+			break;
+		}
+		else {
+			send(clientSocket[clientSocketPosition], inBuffer, returnCode, 0);
 		}
 	}
+	closesocket(serverSocket[serverSocketPosition]);
+	closesocket(clientSocket[clientSocketPosition]);
 	_endthread();
 }

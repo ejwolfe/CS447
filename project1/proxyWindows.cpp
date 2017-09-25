@@ -15,12 +15,20 @@ using namespace std;
 #define PROXYPORT 9080
 #define BUFFERSIZE 1024
 #define SERVERPORT 1080
+#define SERVERIP "127.0.0.1"
 
 // HTTP response messages
 #define OK_IMAGE    "HTTP/1.0 200 OK\nContent-Type:image/gif\n\n"
 #define OK_TEXT     "HTTP/1.0 200 OK\nContent-Type:text/html\n\n"
 #define NOTOK_404   "HTTP/1.0 404 Not Found\nContent-Type:text/html\n\n"
 #define MESS_404    "<html><body><h1>FILE NOT FOUND</h1></body></html>"
+#define NOTOK_401	"HTTP/1.0 401 Unauthorized Access\nContent-Type:text/html\n\n"
+#define MESS_401	"<html><body><h1>Unauthorized Access</h1></body></html>"
+// Hazardous Phrases
+char hazardous_contents_CS_01[256] = ""; /* C->S hazardous contents 1 */
+char hazardous_contents_CS_02[256] = ""; /* C->S hazardous contents 2 */
+char hazardous_contents_SC_01[256] = ""; /* S->C hazardous contents 1 */
+char hazardous_contents_SC_02[256] = ""; /* S->C hazardous contents 2 */
 
 // Prototypes
 void clientToServer(void *in_args); //Thread for sending information from the client to the server
@@ -69,7 +77,7 @@ int main(int argc, char const *argv[]) {
 		serverSocketTemp = socket(AF_INET, SOCK_STREAM, 0);
 		serverAddress.sin_family = AF_INET;
 		serverAddress.sin_port = htons(SERVERPORT);
-		serverAddress.sin_addr.s_addr = inet_addr("127.0.0.1");
+		serverAddress.sin_addr.s_addr = inet_addr(SERVERIP);
 		connect(serverSocketTemp, (struct sockaddr *)&serverAddress, sizeof(serverAddress));
 		serverSocket.push_back(serverSocketTemp);
 
@@ -105,6 +113,14 @@ void clientToServer(void *in_args) {
 	returnCode = recv(clientSocket[clientSocketPosition], inBuffer, strlen(inBuffer), 0);
 		//printf("The return code is %d and the in buffer says %s", returnCode, inBuffer);
 		if (returnCode != -1) {
+			if (strstr(inBuffer, hazardous_contents_CS_01) || strstr(inBuffer, hazardous_contents_CS_02)) {
+				strcpy(outBuffer, NOTOK_401);
+				send(clientSocket[clientSocketPosition], outBuffer, strlen(outBuffer), 0);
+				strcpy(outBuffer, MESS_401);
+				send(clientSocket[clientSocketPosition], outBuffer, strlen(outBuffer), 0);
+				closesocket(serverSocket[serverSocketPosition]);
+				closesocket(clientSocket[clientSocketPosition]);
+			}
 			if (serverSocket[serverSocketPosition] == 0) {
 				strcpy(outBuffer, NOTOK_404);
 				send(clientSocket[clientSocketPosition], outBuffer, strlen(outBuffer), 0);
@@ -131,6 +147,7 @@ void serverToClient(void *in_args) {
 
 	while (1) {
 		char inBuffer[BUFFERSIZE];
+		char outBuffer[BUFFERSIZE];
 		returnCode = recv(serverSocket[serverSocketPosition], inBuffer, BUFFERSIZE, 0);
 		if (returnCode == -1) {
 			printf("Error occured with server connection");
@@ -141,6 +158,13 @@ void serverToClient(void *in_args) {
 			break;
 		}
 		else {
+			if (strstr(inBuffer, hazardous_contents_SC_01) || strstr(inBuffer, hazardous_contents_SC_02)) {
+				strcpy(outBuffer, NOTOK_401);
+				send(clientSocket[clientSocketPosition], outBuffer, strlen(outBuffer), 0);
+				strcpy(outBuffer, MESS_401);
+				send(clientSocket[clientSocketPosition], outBuffer, strlen(outBuffer), 0);
+				break;
+			}
 			send(clientSocket[clientSocketPosition], inBuffer, returnCode, 0);
 		}
 	}

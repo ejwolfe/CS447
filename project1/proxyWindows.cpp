@@ -99,12 +99,9 @@ int main(int argc, char const *argv[]) {
 	return 0;
 }
 
-
-
 void clientToServer(void *in_args) {
 	unsigned int  fh, bufferLength, returnCode;
 	char          inBuffer[BUFFERSIZE], outBuffer[BUFFERSIZE], *fileName;
-	bool          connectionFlag = 1;
 	int	clientSocketPosition, serverSocketPosition;
 
 	clientSocketPosition = ((int *) in_args)[0];
@@ -112,35 +109,37 @@ void clientToServer(void *in_args) {
 
 	returnCode = recv(clientSocket[clientSocketPosition], inBuffer, strlen(inBuffer), 0);
 		//printf("The return code is %d and the in buffer says %s", returnCode, inBuffer);
-		if (returnCode != -1) {
+	if (returnCode <= 0){
+		strcpy(outBuffer, NOTOK_404);
+		send(clientSocket[clientSocketPosition], outBuffer, strlen(outBuffer), 0);
+		strcpy(outBuffer, MESS_404);
+		send(clientSocket[clientSocketPosition], outBuffer, strlen(outBuffer), 0);
+	}
+	else {
+		if (strcmp(hazardous_contents_CS_01, "") != 0 && strcmp(hazardous_contents_CS_02, "") != 0) {
 			if (strstr(inBuffer, hazardous_contents_CS_01) || strstr(inBuffer, hazardous_contents_CS_02)) {
 				strcpy(outBuffer, NOTOK_401);
 				send(clientSocket[clientSocketPosition], outBuffer, strlen(outBuffer), 0);
 				strcpy(outBuffer, MESS_401);
 				send(clientSocket[clientSocketPosition], outBuffer, strlen(outBuffer), 0);
-				closesocket(serverSocket[serverSocketPosition]);
-				closesocket(clientSocket[clientSocketPosition]);
-			}
-			if (serverSocket[serverSocketPosition] == 0) {
-				strcpy(outBuffer, NOTOK_404);
-				send(clientSocket[clientSocketPosition], outBuffer, strlen(outBuffer), 0);
-				strcpy(outBuffer, MESS_404);
-				send(clientSocket[clientSocketPosition], outBuffer, strlen(outBuffer), 0);
-				connectionFlag = 0;
 			}
 			else {
 				//printf("%s", inBuffer);
 				strcpy(outBuffer, inBuffer);
 				send(serverSocket[serverSocketPosition], outBuffer, returnCode, 0);
 			}
+		}
+		else {
+			//printf("%s", inBuffer);
+			strcpy(outBuffer, inBuffer);
+			send(serverSocket[serverSocketPosition], outBuffer, returnCode, 0);
+		}
 	}
 	_endthread();
 }
 
-
 void serverToClient(void *in_args) {
 	unsigned int  fh, bufferLength, returnCode;
-	bool          connectionFlag = 1;
 	int	clientSocketPosition, serverSocketPosition;
 	clientSocketPosition = ((int *)in_args)[0];
 	serverSocketPosition = ((int *)in_args)[1];
@@ -158,14 +157,21 @@ void serverToClient(void *in_args) {
 			break;
 		}
 		else {
-			if (strstr(inBuffer, hazardous_contents_SC_01) || strstr(inBuffer, hazardous_contents_SC_02)) {
-				strcpy(outBuffer, NOTOK_401);
-				send(clientSocket[clientSocketPosition], outBuffer, strlen(outBuffer), 0);
-				strcpy(outBuffer, MESS_401);
-				send(clientSocket[clientSocketPosition], outBuffer, strlen(outBuffer), 0);
-				break;
+			if (strcmp(hazardous_contents_SC_01, "") != 0 && strcmp(hazardous_contents_SC_02, "") != 0) {
+				if (strstr(inBuffer, hazardous_contents_SC_01) || strstr(inBuffer, hazardous_contents_SC_02)) {
+					strcpy(outBuffer, NOTOK_401);
+					send(clientSocket[clientSocketPosition], outBuffer, strlen(outBuffer), 0);
+					strcpy(outBuffer, MESS_401);
+					send(clientSocket[clientSocketPosition], outBuffer, strlen(outBuffer), 0);
+					break;
+				}
+				else {
+					send(clientSocket[clientSocketPosition], inBuffer, returnCode, 0);
+				}
 			}
-			send(clientSocket[clientSocketPosition], inBuffer, returnCode, 0);
+			else {
+				send(clientSocket[clientSocketPosition], inBuffer, returnCode, 0);
+			}
 		}
 	}
 	closesocket(serverSocket[serverSocketPosition]);

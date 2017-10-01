@@ -29,13 +29,14 @@ char hazardous_contents_CS_01[256] = ""; /* C->S hazardous contents 1 */
 char hazardous_contents_CS_02[256] = ""; /* C->S hazardous contents 2 */
 char hazardous_contents_SC_01[256] = ""; /* S->C hazardous contents 1 */
 char hazardous_contents_SC_02[256] = ""; /* S->C hazardous contents 2 */
-
 // Prototypes
 void clientToServer(void *in_args); //Thread for sending information from the client to the server
 void serverToClient(void *in_args); //Thread for sending information from the server to the client
-//unsigned int clientSocket, serverSocket;
+// Vector sockets
 vector<unsigned int> clientSocket;
 vector<unsigned int> serverSocket;
+// Connection flag
+bool hazardousContents = false;
 
 int main(int argc, char const *argv[]) {
 	printf("This is the proxy\n");
@@ -58,6 +59,7 @@ int main(int argc, char const *argv[]) {
 	// Main loop to accept, create new socket for server, connect to server, and start both threads
 
 	while (1) {
+		//Accept connection from client
 		addressLength = sizeof(clientAddress);
 		if ((clientSocketTemp = accept(proxySocket, (struct sockaddr *)&clientAddress, &addressLength)) == 0) {
 			printf("ERROR - Unable to create socket \n");
@@ -66,7 +68,6 @@ int main(int argc, char const *argv[]) {
 		clientSocket.push_back(clientSocketTemp);
 
 		/* Display the signature of the new client ----- */
-
 		memcpy(&clientIPAddress, &clientAddress.sin_addr.s_addr, 4);
 		printf("\n*** Profile for a connecting client ***\n");
 		printf("IP address: %s\n", inet_ntoa(clientIPAddress));
@@ -122,6 +123,7 @@ void clientToServer(void *in_args) {
 				send(clientSocket[clientSocketPosition], outBuffer, strlen(outBuffer), 0);
 				strcpy(outBuffer, MESS_401);
 				send(clientSocket[clientSocketPosition], outBuffer, strlen(outBuffer), 0);
+				hazardousContents = true;
 			}
 			else {
 				//printf("%s", inBuffer);
@@ -145,6 +147,9 @@ void serverToClient(void *in_args) {
 	serverSocketPosition = ((int *)in_args)[1];
 
 	while (1) {
+		if (hazardousContents == false){
+			break;
+		}
 		char inBuffer[BUFFERSIZE];
 		char outBuffer[BUFFERSIZE];
 		returnCode = recv(serverSocket[serverSocketPosition], inBuffer, BUFFERSIZE, 0);
@@ -174,6 +179,7 @@ void serverToClient(void *in_args) {
 			}
 		}
 	}
+	hazardousContents = false;
 	closesocket(serverSocket[serverSocketPosition]);
 	closesocket(clientSocket[clientSocketPosition]);
 	_endthread();

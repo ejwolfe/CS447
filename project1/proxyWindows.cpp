@@ -116,7 +116,7 @@ void clientToServer(void *in_args) {
 		send(clientSocket[clientSocketPosition], outBuffer, strlen(outBuffer), 0);
 	}
 	else {
-		if (strcmp(hazardous_contents_CS_01, "") != 0 && strcmp(hazardous_contents_CS_02, "") != 0) {
+		if (strcmp(hazardous_contents_CS_01, "") != 0 || strcmp(hazardous_contents_CS_02, "") != 0) {
 			if (strstr(inBuffer, hazardous_contents_CS_01) || strstr(inBuffer, hazardous_contents_CS_02)) {
 				strcpy(outBuffer, NOTOK_401);
 				send(clientSocket[clientSocketPosition], outBuffer, strlen(outBuffer), 0);
@@ -157,7 +157,7 @@ void serverToClient(void *in_args) {
 			break;
 		}
 		else {
-			if (strcmp(hazardous_contents_SC_01, "") != 0 && strcmp(hazardous_contents_SC_02, "") != 0) {
+			if (strcmp(hazardous_contents_SC_01, "") != 0 || strcmp(hazardous_contents_SC_02, "") != 0) {
 				if (strstr(inBuffer, hazardous_contents_SC_01) || strstr(inBuffer, hazardous_contents_SC_02)) {
 					strcpy(outBuffer, NOTOK_401);
 					send(clientSocket[clientSocketPosition], outBuffer, strlen(outBuffer), 0);

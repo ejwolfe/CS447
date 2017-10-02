@@ -25,12 +25,12 @@ using namespace std;
 #define NOTOK_401	"HTTP/1.0 401 Unauthorized Access\nContent-Type:text/html\n\n"
 #define MESS_401	"<html><body><h1>Unauthorized Access</h1></body></html>"
 // Hazardous Phrases
-char hazardous_contents_CS_01[256] = ""; /* C->S hazardous contents 1 */
+char hazardous_contents_CS_01[256] = "admin"; /* C->S hazardous contents 1 */
 char hazardous_contents_CS_02[256] = ""; /* C->S hazardous contents 2 */
 char hazardous_contents_SC_01[256] = ""; /* S->C hazardous contents 1 */
 char hazardous_contents_SC_02[256] = ""; /* S->C hazardous contents 2 */
 // Prototypes
-void clientToServer(void *in_args); //Thread for sending information from the client to the server
+char *checkoutForHazardous(int clientSocketPosition); //Thread for sending information from the client to the server
 void serverToClient(void *in_args); //Thread for sending information from the server to the client
 // Vector sockets
 vector<unsigned int> clientSocket;
@@ -47,7 +47,7 @@ int main(int argc, char const *argv[]) {
 	struct sockaddr_in  proxyAddress, clientAddress, serverAddress;
 	struct in_addr      clientIPAddress, serverIPAddress;
 	int                 addressLength, clientSocketPosition = 0, serverSocketPosition = 0;
-    char                buffer[BUFFERSIZE];
+	char                buffer[BUFFERSIZE];
 
 	// Create a socket, fill-in address information, bind it, and then listen
 	proxySocket = socket(AF_INET, SOCK_STREAM, 0);
@@ -58,8 +58,8 @@ int main(int argc, char const *argv[]) {
 	listen(proxySocket, 100);
 
 	// Main loop to accept, create new socket for server, connect to server, and start both threads
-    while (1) {
-        checkReturnCode = 0;
+	while (1) {
+		checkReturnCode = 0;
 		//Accept connection from client
 		addressLength = sizeof(clientAddress);
 		if ((clientSocketTemp = accept(proxySocket, (struct sockaddr *)&clientAddress, &addressLength)) == 0) {
@@ -67,61 +67,60 @@ int main(int argc, char const *argv[]) {
 			exit(1);
 		}
 		clientSocket.push_back(clientSocketTemp);
-        clientSocketPosition++;
-        buffer = checkoutForHazardous(clientSocketPosition);
+		strcpy(buffer, checkoutForHazardous(clientSocketPosition));
+		clientSocketPosition++;
 
-        if (strcmp(buffer, "") != 0){
-		      /* Display the signature of the new client ----- */
-		      memcpy(&clientIPAddress, &clientAddress.sin_addr.s_addr, 4);
-		      printf("\n*** Profile for a connecting client ***\n");
-		      printf("IP address: %s\n", inet_ntoa(clientIPAddress));
-		      printf("Client-side Port: %d\n", ntohs(clientAddress.sin_port));
-		      printf("\n");
+		if (strcmp(buffer, "") != 0) {
+			/* Display the signature of the new client ----- */
+			memcpy(&clientIPAddress, &clientAddress.sin_addr.s_addr, 4);
+			printf("\n*** Profile for a connecting client ***\n");
+			printf("IP address: %s\n", inet_ntoa(clientIPAddress));
+			printf("Client-side Port: %d\n", ntohs(clientAddress.sin_port));
+			printf("\n");
 
-		      // Create the server socket, fill-in address information, and then connect
-		      serverSocketTemp = socket(AF_INET, SOCK_STREAM, 0);
-		      serverAddress.sin_family = AF_INET;
-		      serverAddress.sin_port = htons(SERVERPORT);
-		      serverAddress.sin_addr.s_addr = inet_addr(SERVERIP);
-		      connect(serverSocketTemp, (struct sockaddr *)&serverAddress, sizeof(serverAddress));
-		      serverSocket.push_back(serverSocketTemp);
-              send(serverSocket[serverSocketPosition], buffer, checkReturnCode, 0);
-              serverSocketPosition++;
-		      int threadArgs[2] = { clientSocketPosition-1, serverSocketPosition-1 };
-		      // Setting up arguments for the threads (easier to pass socket information) and then start threads
-		      if (_beginthread(serverToClient, 4096, (void *)threadArgs) < 0) {
-			         printf("ERROR - Unable to create client to server thread \n");
-			         exit(1);
-		      }
-        }
-        else{
-            break;
-        }
+			// Create the server socket, fill-in address information, and then connect
+			serverSocketTemp = socket(AF_INET, SOCK_STREAM, 0);
+			serverAddress.sin_family = AF_INET;
+			serverAddress.sin_port = htons(SERVERPORT);
+			serverAddress.sin_addr.s_addr = inet_addr(SERVERIP);
+			connect(serverSocketTemp, (struct sockaddr *)&serverAddress, sizeof(serverAddress));
+			serverSocket.push_back(serverSocketTemp);
+			send(serverSocket[serverSocketPosition], buffer, checkReturnCode, 0);
+			serverSocketPosition++;
+			int threadArgs[2] = { clientSocketPosition - 1, serverSocketPosition - 1 };
+			// Setting up arguments for the threads (easier to pass socket information) and then start threads
+			if (_beginthread(serverToClient, 4096, (void *)threadArgs) < 0) {
+				printf("ERROR - Unable to create client to server thread \n");
+				exit(1);
+			}
+		}
+		else {
+			break;
+		}
 	}
 	closesocket(proxySocket);
 	WSACleanup();
 	return 0;
 }
 
-char *checkoutForHazardous(int clientSocketPosition){
-    char inBuffer[BUFFERSIZE];
+char *checkoutForHazardous(int clientSocketPosition) {
+	char inBuffer[BUFFERSIZE];
 
 	checkReturnCode = recv(clientSocket[clientSocketPosition], inBuffer, strlen(inBuffer), 0);
 
-    if (checkReturnCode <= 0){
-        strcpy(outBuffer, NOTOK_404);
-        send(clientSocket[clientSocketPosition], outBuffer, strlen(outBuffer), 0);
-        strcpy(outBuffer, MESS_404);
-        send(clientSocket[clientSocketPosition], outBuffer, strlen(outBuffer), 0);
-    }
-    else {
+	if (checkReturnCode <= 0) {
+		strcpy(inBuffer, NOTOK_404);
+		send(clientSocket[clientSocketPosition], inBuffer, strlen(inBuffer), 0);
+		strcpy(inBuffer, MESS_404);
+		send(clientSocket[clientSocketPosition], inBuffer, strlen(inBuffer), 0);
+	}
+	else {
 		if (strcmp(hazardous_contents_CS_01, "") != 0 || strcmp(hazardous_contents_CS_02, "") != 0) {
 			if (strstr(inBuffer, hazardous_contents_CS_01) || strstr(inBuffer, hazardous_contents_CS_02)) {
-				strcpy(outBuffer, NOTOK_401);
-				send(clientSocket[clientSocketPosition], outBuffer, strlen(outBuffer), 0);
-				strcpy(outBuffer, MESS_401);
-				send(clientSocket[clientSocketPosition], outBuffer, strlen(outBuffer), 0);
-				hazardousContents = true;
+				strcpy(inBuffer, NOTOK_401);
+				send(clientSocket[clientSocketPosition], inBuffer, strlen(inBuffer), 0);
+				strcpy(inBuffer, MESS_401);
+				send(clientSocket[clientSocketPosition], inBuffer, strlen(inBuffer), 0);
 			}
 			else {
 				return inBuffer;
@@ -131,7 +130,7 @@ char *checkoutForHazardous(int clientSocketPosition){
 			return inBuffer;
 		}
 	}
-    return "";
+	return "";
 }
 
 void serverToClient(void *in_args) {
@@ -148,7 +147,7 @@ void serverToClient(void *in_args) {
 			printf("Error occured with server connection");
 			break;
 		}
-		else if(returnCode == 0){
+		else if (returnCode == 0) {
 			printf("Disconnected from server");
 			break;
 		}

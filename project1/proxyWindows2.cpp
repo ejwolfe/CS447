@@ -94,9 +94,6 @@ int main(int argc, char const *argv[]) {
 				exit(1);
 			}
 		}
-		else {
-			break;
-		}
 	}
 	closesocket(proxySocket);
 	WSACleanup();
@@ -115,12 +112,28 @@ char *checkoutForHazardous(int clientSocketPosition) {
 		send(clientSocket[clientSocketPosition], inBuffer, strlen(inBuffer), 0);
 	}
 	else {
-		if (strcmp(hazardous_contents_CS_01, "") != 0 || strcmp(hazardous_contents_CS_02, "") != 0) {
-			if (strstr(inBuffer, hazardous_contents_CS_01) || strstr(inBuffer, hazardous_contents_CS_02)) {
+		if (strcmp(hazardous_contents_CS_01, "") != 0) {
+			if (strstr(inBuffer, hazardous_contents_CS_01)) {
 				strcpy(inBuffer, NOTOK_401);
 				send(clientSocket[clientSocketPosition], inBuffer, strlen(inBuffer), 0);
 				strcpy(inBuffer, MESS_401);
 				send(clientSocket[clientSocketPosition], inBuffer, strlen(inBuffer), 0);
+				return "";
+			}
+			else {
+				return inBuffer;
+			}
+		}
+		else {
+			return inBuffer;
+		}
+		if (strcmp(hazardous_contents_CS_02, "") != 0) {
+			if (strstr(inBuffer, hazardous_contents_CS_02)) {
+				strcpy(inBuffer, NOTOK_401);
+				send(clientSocket[clientSocketPosition], inBuffer, strlen(inBuffer), 0);
+				strcpy(inBuffer, MESS_401);
+				send(clientSocket[clientSocketPosition], inBuffer, strlen(inBuffer), 0);
+				return "";
 			}
 			else {
 				return inBuffer;

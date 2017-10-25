@@ -100,8 +100,10 @@ unsigned int calculate_window_size(void);
 // YOUR CUSTOM-MADE FUNCTION PROTOTYPES //////////////////////////////////////
 
 long long unsigned int calculateTransmissionCompletionTime();
-long long unsigned int calculatePacketReceiveTime();
-long long unsigned int calculateACKReceiveTime();
+long long unsigned int calculatePacketReceiveTime(long long unsigned int txTime, long long unsigned int tp);
+long long unsigned int calculateACKReceiveTime(long long unsigned int receiverTime, long long unsigned int tp);
+long long unsigned int calculateTFInNS();
+long long unsigned int calculateTPInNS();
 
 // the module MAIN ///////////////////////////////////////////////////////////
 int main(void)
@@ -153,25 +155,35 @@ int main(void)
 
    // BELOW IS YOUR WORK PLACE ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+   //Calculate TP and TF for the different transmission times
+   long long unsigned int tp = calculateTPInNS();
+   long long unsigned int tf = calculateTFInNS();
+
    while(num_completed_pkt < num_packets_tx){
-    //Is there a new ACK message received?
-        // Yes
-            // Increase the window size the sender by one
+       //Is there a new ACK message received?
+       if(ACK_at_sender[num_completed_pkt-1] == 0){
+            // Yes: Increase the window size the sender by one
+            window_size++;
+        }
 
-    //Is the window size at the sender is more than 0?
-        // No
-            // Advance the simulation time to the next earlist ACK at the sender
+        //Is the window size at the sender is more than 0?
+        if(sdr_window_size < 0){
+            // No: Advance the simulation time to the next earlist ACK at the sender
+            simulation_time += (tp*2) + tf;
+        }
 
-    // Calculate 1, 2, and 3 for the next packet to transmit and save them to the arrays
+        // Calculate 1, 2, and 3 for the next packet to transmit and save them to the arrays
         // 1. Calculate the transmission completion time ("transmission_at_sender[i]")
+        transmission_at_sender[num_completed_pkt-1] = calculateTransmissionCompletionTime();
         // 2. Calculate the packet receive time ("receive_at_receiver[i]")
+        receive_at_receiver[num_completed_pkt-1] = calculatePacketReceiveTime();
         // 3. Calculate the ACK receive time ("ACK_at_sender[i]")
+        ACK_at_sender[num_completed_pkt-1] = calculateACKReceiveTime();
 
-    // Increase the # of the packets completed by one
-    num_completed_pkt++;
-    // Have all the packets been transmitted?
-        // No
-            // loop
+        // Increase the # of the packets completed by one
+        num_completed_pkt++;
+        // Have all the packets been transmitted?
+            // No: loop
     }
 
    // ABOVE IS YOUR WORK PLACE ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -229,3 +241,46 @@ unsigned int calculate_window_size(void)
 
 
 // YOUR CUSTOM-MADE FUNCTIONS +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+long long unsigned int calculateTFInNS(){
+    return (PACKET_SIZE / TX_BW * 1000000000);
+}
+
+long long unsigned int calculateTPInNS(){
+    return (PROP_SPEED * distance);
+}
+
+/*
+* Takes one time parameter, one time array, number of packets completed, and window size.
+* The return value represents the time at which the sender host sends a packet to a receiver host.
+*/
+long long unsigned int calculateTransmissionCompletionTime(
+    long long unsigned int tf,
+    long long unsigned int * ACK_at_sender,
+    unsigned int num_completed_pkt,
+    unsigned int window_size){
+        if(num_completed_pkt > window_size){
+            return (ACK_at_sender(num_completed_pkt-window_size) + tf);
+        } else {
+            return (num_completed_pkt * tf);
+        }
+}
+
+/*
+* Takes two time parameters, txTime and tp, these parameters will be added together and returned.
+* The return value represents the time it takes for the receiver host to receive a packet.
+*/
+long long unsigned int calculatePacketReceiveTime(
+    long long unsigned int txTime,
+    long long unsigned int tp){
+        return (txTime + tp);
+}
+
+/*
+* Takes two time parameters, receiveTime and tp, these parameters will be added together and returned.
+* The return value represents the time it takes for the sender host to receive an ACK message.
+*/
+long long unsigned int calculateACKReceiveTime(
+    long long unsigned int receiverTime,
+    long long unsigned int tp){
+        return (receiverTime + tp);
+}

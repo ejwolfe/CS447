@@ -99,14 +99,9 @@ unsigned int calculate_window_size(void);
 
 // YOUR CUSTOM-MADE FUNCTION PROTOTYPES //////////////////////////////////////
 
-
-
-
-
-
-
-
-
+long long unsigned int calculateTransmissionCompletionTime();
+long long unsigned int calculatePacketReceiveTime();
+long long unsigned int calculateACKReceiveTime();
 
 // the module MAIN ///////////////////////////////////////////////////////////
 int main(void)
@@ -127,10 +122,10 @@ int main(void)
    char                   * Used;  //HF
 
    // set initial parameters -------------------------------------------
-   num_packets_tx = 32;   // 32 packets to simulat
-   TX_BW = 100000000;     // 100M bps
-   distance = 100;        // 100  miles
-   window_size    = 15;   // window size = 15
+   num_packets_tx = 32;     // 32 packets to simulat
+   TX_BW = 100000000;       // 100M bps
+   distance = 1000;         // 1000  miles
+   window_size = 5;         // window size = 5
 
    // instantiate the timestamp vectors --------------------------------
    transmission_at_sender = (long long unsigned int *)calloc(num_packets_tx, sizeof(long long unsigned int));
@@ -158,16 +153,26 @@ int main(void)
 
    // BELOW IS YOUR WORK PLACE ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+   while(num_completed_pkt < num_packets_tx){
+    //Is there a new ACK message received?
+        // Yes
+            // Increase the window size the sender by one
 
+    //Is the window size at the sender is more than 0?
+        // No
+            // Advance the simulation time to the next earlist ACK at the sender
 
+    // Calculate 1, 2, and 3 for the next packet to transmit and save them to the arrays
+        // 1. Calculate the transmission completion time ("transmission_at_sender[i]")
+        // 2. Calculate the packet receive time ("receive_at_receiver[i]")
+        // 3. Calculate the ACK receive time ("ACK_at_sender[i]")
 
-
-
-
-
-
-
-
+    // Increase the # of the packets completed by one
+    num_completed_pkt++;
+    // Have all the packets been transmitted?
+        // No
+            // loop
+    }
 
    // ABOVE IS YOUR WORK PLACE ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 

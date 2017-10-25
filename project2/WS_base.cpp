@@ -99,7 +99,7 @@ unsigned int calculate_window_size(void);
 
 // YOUR CUSTOM-MADE FUNCTION PROTOTYPES //////////////////////////////////////
 
-long long unsigned int calculateTransmissionCompletionTime();
+long long unsigned int calculateTransmissionCompletionTime(long long unsigned int tf, long long unsigned int * ACK_at_sender, unsigned int num_completed_pkt, unsigned int window_size);
 long long unsigned int calculatePacketReceiveTime(long long unsigned int txTime, long long unsigned int tp);
 long long unsigned int calculateACKReceiveTime(long long unsigned int receiverTime, long long unsigned int tp);
 long long unsigned int calculateTFInNS();
@@ -174,11 +174,11 @@ int main(void)
 
         // Calculate 1, 2, and 3 for the next packet to transmit and save them to the arrays
         // 1. Calculate the transmission completion time ("transmission_at_sender[i]")
-        transmission_at_sender[num_completed_pkt-1] = calculateTransmissionCompletionTime();
+        transmission_at_sender[num_completed_pkt-1] = calculateTransmissionCompletionTime(tf, ACK_at_sender, num_completed_pkt, window_size);
         // 2. Calculate the packet receive time ("receive_at_receiver[i]")
-        receive_at_receiver[num_completed_pkt-1] = calculatePacketReceiveTime();
+        receive_at_receiver[num_completed_pkt-1] = calculatePacketReceiveTime(transmission_at_sender[num_completed_pkt-1], tp);
         // 3. Calculate the ACK receive time ("ACK_at_sender[i]")
-        ACK_at_sender[num_completed_pkt-1] = calculateACKReceiveTime();
+        ACK_at_sender[num_completed_pkt-1] = calculateACKReceiveTime(receive_at_receiver[num_completed_pkt-1], tp);
 
         // Increase the # of the packets completed by one
         num_completed_pkt++;
@@ -242,7 +242,10 @@ unsigned int calculate_window_size(void)
 
 // YOUR CUSTOM-MADE FUNCTIONS +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 long long unsigned int calculateTFInNS(){
-    return (PACKET_SIZE / TX_BW * 1000000000);
+    long long unsigned int cool1 = 1000000000;
+    //long long unsigned int returnValue = PACKET_SIZE * cool1 / TX_BW;
+    //printf("%llu", returnValue);
+    return (PACKET_SIZE * cool1 / TX_BW);
 }
 
 long long unsigned int calculateTPInNS(){
@@ -258,10 +261,11 @@ long long unsigned int calculateTransmissionCompletionTime(
     long long unsigned int * ACK_at_sender,
     unsigned int num_completed_pkt,
     unsigned int window_size){
+        printf("%u\n", window_size);
         if(num_completed_pkt > window_size){
-            return (ACK_at_sender(num_completed_pkt-window_size) + tf);
+            return (ACK_at_sender[num_completed_pkt-window_size] + tf);
         } else {
-            return (num_completed_pkt * tf);
+            return ((num_completed_pkt-1) * tf);
         }
 }
 

@@ -126,8 +126,8 @@ int main(void)
    // set initial parameters -------------------------------------------
    num_packets_tx = 32;     // 32 packets to simulat
    TX_BW = 100000000;       // 100M bps
-   distance = 1000;         // 1000  miles
-   window_size = 5;         // window size = 5
+   distance = 100;         // 1000  miles
+   window_size = 10;         // window size = 5
 
    // instantiate the timestamp vectors --------------------------------
    transmission_at_sender = (long long unsigned int *)calloc(num_packets_tx, sizeof(long long unsigned int));
@@ -158,12 +158,13 @@ int main(void)
    //Calculate TP and TF for the different transmission times
    long long unsigned int tp = calculateTPInNS();
    long long unsigned int tf = calculateTFInNS();
+   sdr_window_size = 10;
 
-   while(num_completed_pkt < num_packets_tx){
+   while((num_completed_pkt-1) < (num_packets_tx+1)){
        //Is there a new ACK message received?
        if(ACK_at_sender[num_completed_pkt-1] == 0){
             // Yes: Increase the window size the sender by one
-            window_size++;
+            sdr_window_size--;
         }
 
         //Is the window size at the sender is more than 0?
@@ -262,8 +263,8 @@ long long unsigned int calculateTransmissionCompletionTime(
     unsigned int num_completed_pkt,
     unsigned int window_size){
         printf("%u\n", window_size);
-        if(num_completed_pkt > window_size){
-            return (ACK_at_sender[num_completed_pkt-window_size] + tf);
+        if(num_completed_pkt-1 > 10){
+            return (ACK_at_sender[num_completed_pkt-11] + tf);
         } else {
             return ((num_completed_pkt-1) * tf);
         }
